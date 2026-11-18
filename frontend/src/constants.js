@@ -3,4 +3,7 @@ export const STATES={observed:'已验票',scheduled:'待预测',forecasted:'待�
 
 export const DEBRIEF_STATES={draft:'待经理归档',archived:'已归档冻结'};
 
+export const SUPPLEMENT_STATES={open:'补充待复核',archived:'补充已归档'};
+export const SUPPLEMENT_REVIEW={pending_review:'待复核',clear:'复核完成'};
+
 export const INCIDENT_STATES={open:'待分派',assigned:'处置中',resolved:'待经理复核',closed:'已关闭'};

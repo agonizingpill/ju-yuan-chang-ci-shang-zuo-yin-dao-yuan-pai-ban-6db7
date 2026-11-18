@@ -5,6 +5,7 @@ from .zone_models import EntranceZone
 from .staff_models import CrewAssignment
 from .models import CrewCall
 from .debrief_models import ShowDebrief
+from .supplement_service import ensure_open_for_incident
 from .zones_service import performance_context
 from .staff_service import locked
 from .services import pack,audit
@@ -12,7 +13,13 @@ from .services import pack,audit
 def view(s,x):return pack(x)|{'zone_code':s.get(EntranceZone,x.zone_id).code}
 def create(s,d,u):
     c,p,prod=performance_context(s,d.performance_id)
-    if s.scalar(select(ShowDebrief.id).where(ShowDebrief.performance_id==p.id,ShowDebrief.state=='archived')):raise HTTPException(409,'本场交接已归档，不能追加现场事件')
+    dbr=s.scalar(select(ShowDebrief).where(ShowDebrief.performance_id==p.id))
+    if dbr is not None:
+        # 先锁原交接：与补充开启/修订/归档同一锁序，保证补报与归档互斥不丢险情
+        locked(s,ShowDebrief,dbr.id)
+        if dbr.state=='archived':
+            # 补充期内复用待办；上一版刚归档则自动续开下一版承接，绝不拒收新险情
+            ensure_open_for_incident(s,dbr,u)
     z=locked(s,EntranceZone,d.zone_id)
     if z.production_id!=p.production_id or not z.active:raise HTTPException(409,'事件分区不属于本场或未启用')
     x=HouseIncident(**d.model_dump());s.add(x);s.flush();audit(s,u,'登记现场事件 '+str(x.id));return view(s,x)

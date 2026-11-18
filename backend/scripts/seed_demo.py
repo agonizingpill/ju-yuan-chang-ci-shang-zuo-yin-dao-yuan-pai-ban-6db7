@@ -5,6 +5,7 @@ from src.db import Base,engine,Session
 from src.models import User,Production,Performance,CrewCall
 from src.staff_models import StaffMember,CrewAssignment
 from src.debrief_models import ShowDebrief
+from src.supplement_models import SupplementaryDebrief
 from src.zone_models import EntranceZone,ZonePost
 from src.incident_models import HouseIncident
 from src.lost_models import LostItem,ItemClaim

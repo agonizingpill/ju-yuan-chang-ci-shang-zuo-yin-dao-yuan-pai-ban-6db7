@@ -6,7 +6,7 @@ from .staff_models import StaffMember,CrewAssignment
 from .debrief_models import ShowDebrief
 from .frontdesk_schemas import StaffInput,AssignmentInput,CheckinInput,DebriefInput
 from .services import pack,audit
-from . import staff_service as staff,debrief_service as debrief
+from . import staff_service as staff,debrief_service as debrief,supplement_service as supp
 router=APIRouter()
 @router.get('/staff')
 def members(s=Depends(db_session),u=Depends(current)):return [pack(x) for x in s.scalars(select(StaffMember).order_by(StaffMember.id))]
@@ -28,7 +28,7 @@ def assign(d:AssignmentInput,s=Depends(db_session),u=Depends(writers)):
 def checkin(id:int,d:CheckinInput,s=Depends(db_session),u=Depends(writers)):
     x=staff.checkin(s,id,d,u);s.commit();return x
 @router.get('/show-debriefs')
-def debriefs(s=Depends(db_session),u=Depends(current)):return [pack(x) for x in s.scalars(select(ShowDebrief).order_by(ShowDebrief.id.desc()))]
+def debriefs(s=Depends(db_session),u=Depends(current)):return [supp.debrief_view(s,x) for x in s.scalars(select(ShowDebrief).order_by(ShowDebrief.id.desc()))]
 @router.post('/show-debriefs')
 def create(d:DebriefInput,s=Depends(db_session),u=Depends(writers)):
     x=debrief.save(s,d,u);s.commit();return x

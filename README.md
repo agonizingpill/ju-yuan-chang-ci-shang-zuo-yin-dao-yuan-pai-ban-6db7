@@ -112,4 +112,22 @@ seed为交接演练夜场/午场分别提供EAST/WEST各80容量、最低1岗；
 
 当前范围：分区配置为固定记录，无临时撤岗/跨区调度/分区删除；要求的最低人数由经理给定。事件不通知外部医疗或安保，不是紧急呼救系统；处置由场务角色代录，未对齐个人登录身份。失物凭据按去首尾空白、不区分字母大小写的完整特征文本匹配，用于演示经理核对，无证件/照片识别或外部认领消息；认领姓名/凭据留本地数据库。原人工签到和运营演练数据范围继续适用。新证据在 `test-artifacts/gb-1025/v3/`。
 
+## 归档后补充交接与版本链（第四轮扩展）
+
+10. 补充交接：散场交接归档后发现险情漏报时，经理可凭至少8字原因对该已归档 `ShowDebrief` 开启一份 `SupplementaryDebrief`。原交接的签署人/签署时间、实际人数、预测与实名到岗快照、岗位证据全部原样保留、不改写原表；补充期内实名班表、签到与入口岗位继续冻结（既有冻结规则不变）。同一场次至多一份开启中的补充待办，重复开启或失败重试幂等返回原单；部分唯一索引 `one_open_supplement_per_debrief` 是数据库级最后防线。
+11. 版本链与重新归档：补充单带 `version_no` 与 `prev_id`，首版基于原交接、后续每版关联上一版，`GET /show-debriefs` 直接返回 `supplement_state`（pending_review/clear）、`open_supplement_id` 与完整 `supplement_chain`，历次内容与待办原因可查。补充期间场次标记为待复核；领班可补报现场事件并修订补充说明，经理仅在该场全部高风险事件关闭后才能重新归档，新签署记录归档人与时间并关联上一版。归档后再补报会自动续开下一版补充待办承接，绝不拒收新险情（该场从未开过补充单时仍须经理先凭原因开启）。
+12. 并发口径：补报事件、处置、补充修订与重新归档共享同一把原交接行锁（统一“原交接→补充单/事件”锁序），归档在锁内复查高风险闸门，保证补报与归档并发时不漏新险情、不签下过期内容；重复归档、重复修订在状态机上拒绝，配合部分唯一索引做到失败重试不重复建单、不重复签署。
+
+|接口|权限|
+|---|---|
+|GET /supplementary-debriefs、/show-debriefs/{id}/supplements|三角色只读版本链与待办原因|
+|POST /show-debriefs/{id}/supplements|仅admin凭原因开启；同场已有开启单时返回原单|
+|PUT /supplementary-debriefs/{id}|admin/steward修订补充说明（仅open态）|
+|POST /supplementary-debriefs/{id}/archive|仅admin在高风险事件全部关闭后重新归档|
+|POST /house-incidents|补充期内admin/steward可对已归档场次补报；自动续开规则见上|
+
+`supplement_models.py`、`supplement_service.py`、`supplement_schemas.py`、`supplement_routes.py` 为独立新文件；`incidents_service.py` 仅在补报入口接入补充期判定与续开，`debrief_models.py` 等原表无新增列、无历史回填——旧 archived 数据天然作为版本链 v0，交接页可查看待办原因和版本链。前端在 `pages/debrief.js` 增加待复核标记、开启/修订/重新归档与版本链表格，`pages/incidents.js` 提示补充期状态；枚举见前后端 constants。
+
+当前范围：补充交接只追加版本，不回改原交接的人数与说明；自动续开的补充单仍需经理补填原因并完成复核归档，系统不代为关闭事件或签署；事件处置、失物与点名的既有边界不变。
+
 MIT License。
